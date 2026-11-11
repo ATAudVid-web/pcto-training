@@ -1,0 +1,142 @@
+rules_version = '2';
+
+// ---------------------------------------------------------------------------
+// PCTO Service Training Hub - Firestore security rules
+//
+// What these rules enforce:
+//  * Deny by default; every access requires a signed-in user.
+//  * Inactive users (active == false) get no access, except reading their own
+//    users doc (so the app can tell them the account is deactivated).
+//  * users/{uid}: owner may read/create their own doc. On create role must be
+//    'user' and active true, email must match the auth token. Owner may update
+//    ONLY name. Lead/admin may read all users. Only admin may change role/active
+//    of OTHER users (never their own, to avoid lockout).
+//  * assignments/{uid_moduleId}: owner read; lead/admin read/write.
+//  * progress/{uid_moduleId}: owner may read/write their own doc for an
+//    assigned module but can never set approvedBy/approvedAt, and cannot edit
+//    after approval. Lead/admin may read all and write approval fields on
+//    OTHER people's docs (no self-approval).
+//  * audits/{id}: lead/admin create (actor must equal own uid); admin read.
+//
+// Test every path in the Firebase console Rules Playground before relying on
+// these rules. The quiz answer key lives in client JS (public); an approval by
+// a lead is the real gate.
+// ---------------------------------------------------------------------------
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function userPath(uid) { return /databases/$(database)/documents/users/$(uid); }
+    function hasProfile() { return exists(userPath(request.auth.uid)); }
+    function me() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
+    function isActive() { return signedIn() && hasProfile() && me().active == true; }
+    function isLead() { return isActive() && me().role == 'lead'; }
+    function isAdmin() { return isActive() && me().role == 'admin'; }
+    function isStaff() { return isLead() || isAdmin(); }
+    function changed(keys) { return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys); }
+
+    // Deny everything not matched below.
+    match /{document=**} { allow read, write: if false; }
+
+    // ---------------- users ----------------
+    match /users/{userId} {
+      allow read: if signedIn() && (request.auth.uid == userId || isStaff());
+
+      allow create: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly(['name', 'email', 'role', 'active', 'created'])
+        && request.resource.data.keys().hasAll(['name', 'email', 'role', 'active', 'created'])
+        && request.resource.data.role == 'user'
+        && request.resource.data.active == true
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 80
+        && request.resource.data.created == request.time;
+
+      allow update: if isActive() && (
+        // owner: name only (role, active, email, created cannot change)
+        (request.auth.uid == userId
+          && changed(['name'])
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 0
+          && request.resource.data.name.size() <= 80)
+        ||
+        // admin: role/active of other users only
+        (isAdmin()
+          && request.auth.uid != userId
+          && changed(['role', 'active'])
+          && request.resource.data.role in ['user', 'lead', 'admin']
+          && request.resource.data.active is bool)
+      );
+
+      allow delete: if false;
+    }
+
+    // ---------------- assignments ----------------
+    match /assignments/{assignId} {
+      allow read: if isActive() && (resource.data.uid == request.auth.uid || isStaff());
+
+      allow create, update: if isStaff()
+        && request.resource.data.keys().hasOnly(['uid', 'moduleId', 'assignedBy', 'assignedAt'])
+        && assignId == request.resource.data.uid + '_' + request.resource.data.moduleId
+        && request.resource.data.assignedBy == request.auth.uid;
+
+      allow delete: if isStaff();
+    }
+
+    // ---------------- progress ----------------
+    match /progress/{progressId} {
+      allow read: if isActive() && (resource.data.uid == request.auth.uid || isStaff());
+
+      // Owner create: own doc, assigned module, approval fields empty.
+      allow create: if isActive() && (
+        (request.resource.data.uid == request.auth.uid
+        && progressId == request.auth.uid + '_' + request.resource.data.moduleId
+        && exists(/databases/$(database)/documents/assignments/$(progressId))
+        && request.resource.data.keys().hasOnly(['uid', 'moduleId', 'completed', 'quizPassed', 'quizAttempts', 'submitted', 'approvedBy', 'approvedAt', 'notes'])
+        && request.resource.data.get('approvedBy', null) == null
+        && request.resource.data.get('approvedAt', null) == null
+        && request.resource.data.notes.size() <= 2000)
+        ||
+        // Staff create for someone else's doc.
+        (isStaff()
+          && request.resource.data.uid != request.auth.uid
+          && progressId == request.resource.data.uid + '_' + request.resource.data.moduleId)
+      );
+
+      allow update: if isActive() && (
+        // Owner update: not after approval; approval fields must not change; identity fixed.
+        (resource.data.uid == request.auth.uid
+          && resource.data.get('approvedAt', null) == null
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.moduleId == resource.data.moduleId
+          && request.resource.data.get('approvedBy', null) == resource.data.get('approvedBy', null)
+          && request.resource.data.get('approvedAt', null) == null
+          && changed(['completed', 'quizPassed', 'quizAttempts', 'submitted', 'notes'])
+          && request.resource.data.notes.size() <= 2000)
+        ||
+        // Staff update on OTHER people's docs (approve / request changes).
+        (isStaff()
+          && resource.data.uid != request.auth.uid
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.moduleId == resource.data.moduleId
+          && (request.resource.data.get('approvedBy', null) == null
+              || request.resource.data.approvedBy == request.auth.uid))
+      );
+
+      allow delete: if false;
+    }
+
+    // ---------------- audits ----------------
+    match /audits/{auditId} {
+      allow create: if isStaff()
+        && request.resource.data.keys().hasOnly(['actor', 'action', 'target', 'created'])
+        && request.resource.data.actor == request.auth.uid
+        && request.resource.data.created == request.time;
+      allow read: if isAdmin();
+      allow update, delete: if false;
+    }
+  }
+}

@@ -1,0 +1,1417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PCTO Service Training Hub</title>
+<style>
+/* ---- Design system ---- */
+:root {
+  --bg:   #091421;
+  --s1:   #0d1f30;
+  --s2:   #112338;
+  --s3:   #16304a;
+  --gold: #c8a85b;
+  --gold2:#d3ab5d;
+  --text: #e8edf2;
+  --mute: #7a8fa0;
+  --ok:   #3ecf8e;
+  --warn: #f5a623;
+  --err:  #e55353;
+  --r:    12px;
+  --r-sm: 8px;
+  --sh:   0 4px 24px rgba(0,0,0,.45);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:var(--gold);text-decoration:none}
+button{cursor:pointer;border:none;background:none;color:inherit;font:inherit}
+input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+img{max-width:100%}
+
+/* ---- Utility ---- */
+.hidden{display:none!important}
+.flex{display:flex}
+.col{flex-direction:column}
+.gap{gap:12px}
+.gap2{gap:20px}
+.center{align-items:center}
+.between{justify-content:space-between}
+.wrap{flex-wrap:wrap}
+.grow{flex:1 1 0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+.badge{display:inline-block;padding:3px 10px;border-radius:99px;font-size:.75rem;font-weight:600;letter-spacing:.03em}
+.badge-ok  {background:rgba(62,207,142,.15);color:var(--ok)}
+.badge-warn{background:rgba(245,166,35,.15);color:var(--warn)}
+.badge-mute{background:rgba(122,143,160,.15);color:var(--mute)}
+.badge-gold{background:rgba(200,168,91,.15);color:var(--gold)}
+
+/* ---- Toast ---- */
+#toast-stack{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:10px;pointer-events:none}
+.toast{padding:12px 20px;border-radius:var(--r-sm);font-size:.9rem;font-weight:500;box-shadow:var(--sh);pointer-events:auto;animation:slide-in .22s ease;max-width:340px}
+.toast-ok  {background:#0f3d2a;border-left:4px solid var(--ok);color:var(--ok)}
+.toast-err {background:#3d1414;border-left:4px solid var(--err);color:var(--err)}
+.toast-warn{background:#3d2e0e;border-left:4px solid var(--warn);color:var(--warn)}
+@keyframes slide-in{from{transform:translateX(60px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* ---- Modal ---- */
+#modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{background:var(--s1);border-radius:var(--r);padding:28px 32px;max-width:460px;width:100%;box-shadow:var(--sh);display:flex;flex-direction:column;gap:18px}
+.modal h2{font-size:1.1rem;font-weight:700;color:var(--gold)}
+.modal p{color:var(--mute);font-size:.9rem;line-height:1.5}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:4px}
+
+/* ---- Buttons ---- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 20px;border-radius:var(--r-sm);font-size:.9rem;font-weight:600;transition:filter .15s,opacity .15s}
+.btn:hover{filter:brightness(1.12)}
+.btn:active{filter:brightness(.9)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#091421}
+.btn-ghost{background:var(--s3);color:var(--text)}
+.btn-danger{background:rgba(229,83,83,.15);color:var(--err)}
+.btn-sm{padding:7px 14px;font-size:.82rem}
+.btn-xs{padding:5px 11px;font-size:.78rem;border-radius:6px}
+
+/* ---- Form controls ---- */
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:.82rem;font-weight:600;color:var(--mute);text-transform:uppercase;letter-spacing:.06em}
+.field input,.field textarea,.field select{background:var(--s3);border:1.5px solid rgba(255,255,255,.08);border-radius:var(--r-sm);padding:10px 14px;color:var(--text);font-size:.9rem;transition:border-color .15s;width:100%}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--gold);outline:none}
+.field textarea{resize:vertical;min-height:80px}
+.field select option{background:var(--s1)}
+
+/* ---- App shell ---- */
+#app{display:grid;grid-template-columns:230px 1fr;grid-template-rows:100vh;height:100vh}
+#sidebar{background:var(--s1);display:flex;flex-direction:column;gap:4px;padding:20px 12px;overflow-y:auto;border-right:1px solid rgba(255,255,255,.05)}
+#main{overflow-y:auto;padding:0}
+
+/* ---- Sidebar brand ---- */
+.brand{display:flex;align-items:center;gap:10px;padding:8px 10px 20px;border-bottom:1px solid rgba(255,255,255,.07);margin-bottom:8px}
+.brand-icon{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--gold),var(--gold2));display:grid;place-items:center;font-size:1.1rem;font-weight:900;color:#091421;flex-shrink:0}
+.brand-name{font-size:.85rem;font-weight:700;color:var(--gold);line-height:1.2}
+.brand-sub{font-size:.72rem;color:var(--mute)}
+
+/* ---- Nav items ---- */
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--r-sm);font-size:.87rem;font-weight:500;color:var(--mute);transition:background .15s,color .15s;cursor:pointer;user-select:none}
+.nav-item:hover{background:var(--s2);color:var(--text)}
+.nav-item.active{background:rgba(200,168,91,.12);color:var(--gold)}
+.nav-icon{width:18px;text-align:center;flex-shrink:0}
+.nav-section{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--s3);padding:12px 12px 4px;color:#2a4760;user-select:none}
+
+/* ---- Sidebar footer ---- */
+.nav-footer{margin-top:auto;border-top:1px solid rgba(255,255,255,.07);padding-top:12px}
+.user-chip{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--r-sm)}
+.user-av{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--s3),var(--gold));display:grid;place-items:center;font-size:.8rem;font-weight:700;color:var(--gold);flex-shrink:0;text-transform:uppercase}
+.user-name{font-size:.82rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.user-role{font-size:.7rem;color:var(--mute);text-transform:capitalize}
+
+/* ---- Views ---- */
+.view{padding:36px 40px;max-width:1100px;animation:fade-in .18s ease}
+@keyframes fade-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.view-title{font-size:1.5rem;font-weight:800;color:var(--text);margin-bottom:4px}
+.view-sub{font-size:.9rem;color:var(--mute);margin-bottom:28px}
+
+/* ---- Dashboard cards ---- */
+.stat-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-bottom:28px}
+.stat-card{background:var(--s1);border-radius:var(--r);padding:18px 20px;border:1px solid rgba(255,255,255,.05)}
+.stat-num{font-size:1.8rem;font-weight:800;color:var(--gold);line-height:1}
+.stat-label{font-size:.78rem;color:var(--mute);margin-top:4px}
+
+/* ---- Module cards ---- */
+.module-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.mod-card{background:var(--s1);border-radius:var(--r);padding:20px 22px;border:1.5px solid rgba(255,255,255,.06);cursor:pointer;transition:border-color .2s,box-shadow .2s;display:flex;flex-direction:column;gap:12px}
+.mod-card:hover{border-color:rgba(200,168,91,.4);box-shadow:0 6px 30px rgba(0,0,0,.35)}
+.mod-card-locked{opacity:.5;cursor:default}
+.mod-card-locked:hover{border-color:rgba(255,255,255,.06);box-shadow:none}
+.mod-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.mod-icon{width:40px;height:40px;border-radius:10px;background:var(--s2);display:grid;place-items:center;font-size:1.2rem;flex-shrink:0}
+.mod-title{font-size:.97rem;font-weight:700;line-height:1.3;flex:1}
+.mod-desc{font-size:.82rem;color:var(--mute);line-height:1.5}
+.prog-bar-wrap{background:var(--s3);border-radius:99px;height:5px;overflow:hidden}
+.prog-bar{background:linear-gradient(90deg,var(--gold),var(--gold2));height:100%;border-radius:99px;transition:width .4s}
+.mod-meta{display:flex;align-items:center;justify-content:space-between;font-size:.78rem;color:var(--mute)}
+
+/* ---- Lesson view ---- */
+.lesson-wrap{display:grid;grid-template-columns:1fr 320px;gap:24px;padding:36px 40px;max-width:1100px;animation:fade-in .18s ease}
+.lesson-main{display:flex;flex-direction:column;gap:20px}
+.lesson-side{display:flex;flex-direction:column;gap:16px;position:sticky;top:0;align-self:flex-start;padding-top:0}
+
+.lesson-header{background:var(--s1);border-radius:var(--r);padding:24px 28px;border:1px solid rgba(255,255,255,.05)}
+.lesson-back{display:inline-flex;align-items:center;gap:6px;font-size:.82rem;color:var(--mute);cursor:pointer;margin-bottom:14px;transition:color .15s}
+.lesson-back:hover{color:var(--gold)}
+.lesson-title{font-size:1.3rem;font-weight:800;color:var(--text);margin-bottom:6px}
+.lesson-desc{font-size:.9rem;color:var(--mute)}
+
+.task-list{background:var(--s1);border-radius:var(--r);padding:20px 22px;border:1px solid rgba(255,255,255,.05)}
+.task-list h3{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);margin-bottom:14px}
+.task-item{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;transition:opacity .15s}
+.task-item:last-child{border-bottom:none}
+.task-check{width:22px;height:22px;border-radius:6px;border:2px solid rgba(255,255,255,.12);flex-shrink:0;display:grid;place-items:center;transition:all .2s;margin-top:1px}
+.task-check.done{background:var(--ok);border-color:var(--ok)}
+.task-check.done::after{content:'✓';font-size:.75rem;font-weight:700;color:#fff}
+.task-text{font-size:.87rem;line-height:1.5}
+
+/* ---- Teach mode panel ---- */
+.teach-panel{background:var(--s2);border-radius:var(--r);padding:18px 20px;border:1.5px solid rgba(200,168,91,.2)}
+.teach-panel h3{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--gold);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.teach-tip{font-size:.85rem;color:var(--mute);line-height:1.5;padding:8px 10px;background:rgba(0,0,0,.2);border-radius:var(--r-sm);margin-bottom:8px;border-left:3px solid rgba(200,168,91,.3)}
+.teach-tip:last-child{margin-bottom:0}
+
+/* ---- Camera panel ---- */
+.camera-panel{background:var(--s1);border-radius:var(--r);padding:18px 20px;border:1px solid rgba(255,255,255,.05)}
+.camera-panel h3{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.camera-preview{width:100%;aspect-ratio:16/9;background:var(--s3);border-radius:var(--r-sm);overflow:hidden;position:relative;display:grid;place-items:center}
+.camera-preview video,.camera-preview canvas{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+.camera-placeholder{font-size:2.5rem;opacity:.2}
+.camera-btn-row{display:flex;gap:8px;margin-top:10px}
+.photo-thumbs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+.photo-thumb{aspect-ratio:1;background:var(--s3);border-radius:var(--r-sm);overflow:hidden;cursor:pointer;position:relative}
+.photo-thumb img{width:100%;height:100%;object-fit:cover}
+.photo-del{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.7);border-radius:4px;padding:2px 4px;font-size:.65rem;color:var(--err);line-height:1;cursor:pointer}
+
+/* ---- Quiz card ---- */
+.quiz-card{background:var(--s1);border-radius:var(--r);padding:22px 24px;border:1px solid rgba(255,255,255,.05)}
+.quiz-card h3{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);margin-bottom:14px}
+.quiz-question{font-size:.93rem;font-weight:600;color:var(--text);margin-bottom:14px;line-height:1.5}
+.quiz-choices{display:flex;flex-direction:column;gap:8px}
+.quiz-choice{padding:11px 14px;border-radius:var(--r-sm);border:1.5px solid rgba(255,255,255,.08);font-size:.87rem;cursor:pointer;transition:border-color .15s,background .15s;text-align:left}
+.quiz-choice:hover{border-color:rgba(200,168,91,.4);background:rgba(200,168,91,.06)}
+.quiz-choice.selected{border-color:var(--gold);background:rgba(200,168,91,.1)}
+.quiz-choice.correct{border-color:var(--ok);background:rgba(62,207,142,.12);color:var(--ok)}
+.quiz-choice.wrong{border-color:var(--err);background:rgba(229,83,83,.1);color:var(--err)}
+.quiz-result{padding:12px 14px;border-radius:var(--r-sm);font-size:.85rem;font-weight:600;text-align:center}
+.quiz-result.pass{background:rgba(62,207,142,.12);color:var(--ok)}
+.quiz-result.fail{background:rgba(229,83,83,.1);color:var(--err)}
+
+/* ---- Notes / submit ---- */
+.notes-submit{background:var(--s1);border-radius:var(--r);padding:20px 22px;border:1px solid rgba(255,255,255,.05)}
+.notes-submit h3{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);margin-bottom:12px}
+
+/* ---- Team / Users table ---- */
+.card-panel{background:var(--s1);border-radius:var(--r);padding:24px 26px;border:1px solid rgba(255,255,255,.05)}
+.table-wrap{overflow-x:auto;border-radius:var(--r-sm);border:1px solid rgba(255,255,255,.06)}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+thead th{background:var(--s2);padding:11px 14px;text-align:left;font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);font-weight:700;white-space:nowrap}
+tbody tr{border-top:1px solid rgba(255,255,255,.04);transition:background .12s}
+tbody tr:hover{background:rgba(255,255,255,.025)}
+td{padding:11px 14px;vertical-align:middle}
+.prog-mini{display:flex;align-items:center;gap:8px;font-size:.8rem}
+.prog-dots{display:flex;gap:3px}
+.prog-dot{width:8px;height:8px;border-radius:50%;background:var(--s3)}
+.prog-dot.done{background:var(--ok)}
+.prog-dot.sub{background:var(--warn)}
+.prog-dot.appr{background:var(--gold)}
+
+/* ---- Guest banner ---- */
+.guest-banner{background:linear-gradient(90deg,rgba(200,168,91,.15),rgba(200,168,91,.06));border:1px solid rgba(200,168,91,.2);border-radius:var(--r);padding:12px 18px;font-size:.85rem;color:var(--gold);display:flex;align-items:center;gap:10px;margin-bottom:20px}
+
+/* ---- Login page ---- */
+#login-page{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;background:radial-gradient(ellipse 60% 60% at 50% 10%,rgba(200,168,91,.08),transparent)}
+.login-box{background:var(--s1);border-radius:var(--r);padding:36px 40px;width:100%;max-width:420px;box-shadow:var(--sh);border:1px solid rgba(255,255,255,.07)}
+.login-logo{text-align:center;margin-bottom:28px}
+.login-logo-icon{width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,var(--gold),var(--gold2));display:grid;place-items:center;font-size:1.6rem;font-weight:900;color:#091421;margin:0 auto 10px}
+.login-logo h1{font-size:1.1rem;font-weight:800;color:var(--gold)}
+.login-logo p{font-size:.82rem;color:var(--mute);margin-top:2px}
+.login-form{display:flex;flex-direction:column;gap:14px}
+.login-or{text-align:center;font-size:.8rem;color:var(--mute);position:relative;padding:4px 0}
+.login-or::before,.login-or::after{content:'';position:absolute;top:50%;width:42%;height:1px;background:rgba(255,255,255,.07)}
+.login-or::before{left:0}
+.login-or::after{right:0}
+
+/* ---- Mobile ---- */
+#menu-toggle{display:none}
+#sidebar-overlay{display:none}
+@media(max-width:860px){
+  #app{grid-template-columns:1fr;position:relative}
+  #sidebar{position:fixed;left:0;top:0;bottom:0;width:260px;z-index:200;transform:translateX(-100%);transition:transform .24s ease;box-shadow:4px 0 24px rgba(0,0,0,.5)}
+  #sidebar.open{transform:translateX(0)}
+  #sidebar-overlay{display:block;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:199;opacity:0;pointer-events:none;transition:opacity .24s}
+  #sidebar-overlay.show{opacity:1;pointer-events:auto}
+  #menu-toggle{display:flex;position:fixed;top:14px;left:14px;z-index:201;background:var(--s1);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:8px 10px;font-size:1.1rem;color:var(--text)}
+  .view,.lesson-wrap{padding:72px 18px 24px}
+  .lesson-wrap{grid-template-columns:1fr;padding-top:72px}
+  .lesson-side{position:static}
+  .stat-row{grid-template-columns:repeat(2,1fr)}
+  .modal{padding:22px 20px}
+}
+@media(max-width:480px){
+  .module-grid{grid-template-columns:1fr}
+  .login-box{padding:26px 20px}
+  .stat-row{grid-template-columns:1fr 1fr}
+}
+
+/* ---- v2 additions (static/Firebase build) ---- */
+.vsec{display:none}
+.vsec.active{display:block}
+.safety-note{background:rgba(245,166,35,.1);border:1.5px solid rgba(245,166,35,.45);border-radius:var(--r);padding:14px 18px;font-size:.84rem;color:var(--warn);line-height:1.5}
+.safety-note strong{display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em;font-size:.76rem}
+.safety-foot{font-size:.72rem;color:var(--mute);line-height:1.45;margin-top:22px;max-width:760px}
+.login-tabs{display:flex;gap:6px;margin-bottom:18px}
+.login-tabs button{flex:1;padding:8px 6px;border-radius:var(--r-sm);font-size:.8rem;font-weight:600;color:var(--mute);background:var(--s2)}
+.login-tabs button.active{background:rgba(200,168,91,.14);color:var(--gold)}
+.login-pane{display:none}
+.login-pane.active{display:flex}
+.setup-box{background:var(--s2);border:1.5px solid rgba(245,166,35,.4);border-radius:var(--r);padding:16px 18px;margin-bottom:16px;font-size:.84rem;color:var(--text);line-height:1.5}
+.setup-box h2{font-size:.95rem;color:var(--warn);margin-bottom:6px}
+.setup-box code{background:rgba(0,0,0,.3);padding:1px 5px;border-radius:4px;font-size:.78rem}
+.link-btn{color:var(--gold);font-size:.8rem;text-decoration:underline}
+.task-item.ro,.quiz-choice:disabled{cursor:default}
+.quiz-choice:disabled{opacity:.7}
+.view-only{background:rgba(122,143,160,.12);border-radius:var(--r-sm);padding:10px 14px;font-size:.82rem;color:var(--mute)}
+.ck{display:flex;align-items:center;gap:10px;font-size:.88rem;padding:6px 0;text-transform:none;letter-spacing:0;color:var(--text);font-weight:500}
+.ck input{width:auto}
+.inline-sel{background:var(--s3);color:var(--text);border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:5px 8px;font-size:.82rem}
+.cell-btn{cursor:pointer}
+.photo-big{width:100%;border-radius:var(--r-sm)}
+.mini-list{font-size:.8rem;color:var(--mute);line-height:1.6}
+.mini-list div{border-top:1px solid rgba(255,255,255,.04);padding:4px 0}
+</style>
+</head>
+<body>
+
+<!-- Toast stack -->
+<div id="toast-stack" aria-live="polite"></div>
+
+<!-- Modal overlay (replaces alert/prompt/confirm) -->
+<div id="modal-overlay" class="hidden">
+  <div class="modal" id="modal-box" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <h2 id="modal-title"></h2>
+    <p id="modal-body"></p>
+    <div id="modal-extra"></div>
+    <div class="modal-actions" id="modal-actions"></div>
+  </div>
+</div>
+
+<!-- Sign-in / setup screen -->
+<div id="login-page">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-icon">P</div>
+      <h1>PCTO Training Hub</h1>
+      <p>Power Chapel The Oasis &middot; Louisville, GA</p>
+    </div>
+
+    <div id="setup-needed" class="setup-box hidden">
+      <h2>Setup needed</h2>
+      <p>This site has not been connected to a Firebase project yet, so sign-in is switched off. Open <code>index.html</code>, replace the placeholder values in <code>firebaseConfig</code>, and follow the README. You can still explore every module below as a Guest (nothing is saved).</p>
+    </div>
+
+    <div id="auth-forms">
+      <div class="login-tabs">
+        <button type="button" data-pane="pane-signin" class="active">Sign in</button>
+        <button type="button" data-pane="pane-signup">Create account</button>
+        <button type="button" data-pane="pane-reset">Forgot?</button>
+      </div>
+
+      <form class="login-form login-pane active" id="pane-signin" autocomplete="on">
+        <div class="field"><label for="si-email">Email address</label>
+          <input id="si-email" type="email" placeholder="you@example.com" autocomplete="username" required></div>
+        <div class="field"><label for="si-pass">Password</label>
+          <input id="si-pass" type="password" autocomplete="current-password" required></div>
+        <button type="submit" class="btn btn-gold" id="si-btn">Sign in</button>
+      </form>
+
+      <form class="login-form login-pane" id="pane-signup" autocomplete="on">
+        <div class="field"><label for="su-name">Full name</label>
+          <input id="su-name" type="text" autocomplete="name" required></div>
+        <div class="field"><label for="su-email">Email address</label>
+          <input id="su-email" type="email" autocomplete="username" required></div>
+        <div class="field"><label for="su-pass">Password (6+ characters)</label>
+          <input id="su-pass" type="password" minlength="6" autocomplete="new-password" required></div>
+        <button type="submit" class="btn btn-gold" id="su-btn">Create account</button>
+        <p style="font-size:.75rem;color:var(--mute)">New accounts start as <b>user</b>. A lead or admin assigns your modules.</p>
+      </form>
+
+      <form class="login-form login-pane" id="pane-reset">
+        <div class="field"><label for="rs-email">Email address</label>
+          <input id="rs-email" type="email" autocomplete="username" required></div>
+        <button type="submit" class="btn btn-gold" id="rs-btn">Send reset email</button>
+      </form>
+    </div>
+
+    <div class="login-or" style="margin:16px 0">or</div>
+    <button class="btn btn-ghost" style="width:100%" id="guest-btn" type="button">Explore as Guest</button>
+    <p id="login-err" style="color:var(--err);font-size:.82rem;text-align:center;margin-top:12px;min-height:1.2em" role="alert"></p>
+    <p class="safety-foot" id="login-safety"></p>
+  </div>
+</div>
+
+<!-- App shell -->
+<div id="app" class="hidden">
+  <button id="menu-toggle" aria-label="Open menu">&#9776;</button>
+  <div id="sidebar-overlay"></div>
+
+  <nav id="sidebar">
+    <div class="brand">
+      <div class="brand-icon">P</div>
+      <div>
+        <div class="brand-name">PCTO Training Hub</div>
+        <div class="brand-sub" id="guest-label"></div>
+      </div>
+    </div>
+
+    <div class="nav-section">Menu</div>
+    <div class="nav-item active" data-view="dashboard"><span class="nav-icon">&#8862;</span> Dashboard</div>
+    <div class="nav-item" data-view="courses"><span class="nav-icon">&#9672;</span> Training Modules</div>
+
+    <div class="nav-section hidden" id="nav-team-section">Team</div>
+    <div class="nav-item hidden" data-view="team" id="nav-team"><span class="nav-icon">&#9673;</span> Team Overview</div>
+    <div class="nav-item hidden" data-view="users" id="nav-users"><span class="nav-icon">&#8853;</span> Manage Users</div>
+
+    <div class="nav-footer">
+      <div class="nav-item" data-view="account"><span class="nav-icon">&#9678;</span> Account</div>
+      <div class="nav-item" id="logout-btn"><span class="nav-icon">&larr;</span> <span id="logout-label">Sign Out</span></div>
+      <div class="user-chip" style="margin-top:4px">
+        <div class="user-av" id="user-av">?</div>
+        <div>
+          <div class="user-name" id="user-name">Guest</div>
+          <div class="user-role" id="user-role-label">guest</div>
+        </div>
+      </div>
+      <div style="text-align:center;font-size:.7rem;color:var(--mute);margin-top:8px;opacity:.6">PCTO Training Hub v2.0.0</div>
+    </div>
+  </nav>
+
+  <main id="main">
+    <div class="vsec" id="view-dashboard"></div>
+    <div class="vsec" id="view-courses"></div>
+    <div class="vsec" id="view-lesson"></div>
+    <div class="vsec" id="view-team"></div>
+    <div class="vsec" id="view-users"></div>
+    <div class="vsec" id="view-account"></div>
+  </main>
+</div>
+
+<script type="module">
+/* ==========================================================
+   PCTO Service Training Hub v2.0.0 - static site + Firebase
+   ========================================================== */
+
+// >>> EDIT ME: paste your Firebase web-app config here (see README) <<<
+const firebaseConfig = { apiKey:'AIzaSyBoNQ5KgQO_UOP6cL737vV1nNUkjU_cknE', authDomain:'pcto-training.firebaseapp.com', projectId:'pcto-training', storageBucket:'pcto-training.firebasestorage.app', messagingSenderId:'494484808690', appId:'1:494484808690:web:13b733189e373ef545c16b' };
+// >>> end of config <<<
+
+const FIREBASE_VERSION = '10.14.1';
+const FIREBASE_BASE = 'https://www.gstatic.com/firebasejs/' + FIREBASE_VERSION + '/';
+const APP_VERSION = '2.0.0';
+const FIREBASE_CONFIGURED = !Object.values(firebaseConfig).some(v => /^REPLACE/.test(String(v)));
+
+const SAFETY_TEXT = 'Module content is provisional and not independently verified against the final approved checklist. Electrical/breaker instructions (Facility module) are safety-sensitive, only authorized personnel should perform them, and need local policy review before production use.';
+
+// Module tuples extracted verbatim from the original server.py by build.py:
+// [id, title, description, tasks[], question, answer, choices[]]
+const MODULES_RAW = [
+ [
+  "audio",
+  "Audio / Front of House",
+  "Check X32 scene, microphones and batteries, house speakers, subs and sound check.",
+  [
+   "Confirm the Behringer X32 is powered on and correct service scene is selected",
+   "Verify microphone cage, wireless microphones and fresh batteries",
+   "Check house mains, side-fills and subwoofers",
+   "Perform speech and music sound checks; report feedback or faults"
+  ],
+  "Which item should be verified before beginning sound check?",
+  "The X32 scene and microphone readiness",
+  [
+   "The X32 scene and microphone readiness",
+   "The parking lot",
+   "The livestream thumbnail"
+  ]
+ ],
+ [
+  "stage",
+  "Stage & Band Audio",
+  "Stage monitors, instruments, in-ears and connections.",
+  [
+   "Verify stage power and monitors are operating",
+   "Check instrument connections and band inputs",
+   "Test in-ear/personal monitor feeds where used",
+   "Confirm the lead mic position is safe from monitor feedback"
+  ],
+  "What should be tested before a band rehearsal?",
+  "Stage monitors and instrument inputs",
+  [
+   "Only the main sanctuary lights",
+   "Stage monitors and instrument inputs",
+   "Only the livestream title"
+  ]
+ ],
+ [
+  "video",
+  "Video Production",
+  "Camera positions, Switcher Studio and recording readiness.",
+  [
+   "Verify iPad, Switcher Studio and Wi-Fi connection",
+   "Position and test rear carpet/wood camera and left-second-row camera",
+   "Confirm phone camera power, framing and batteries",
+   "Test live preview and backup workflow"
+  ],
+  "Which tool controls the described video switching workflow?",
+  "Switcher Studio",
+  [
+   "Switcher Studio",
+   "The thermostat",
+   "Proclaim alone"
+  ]
+ ],
+ [
+  "distribution",
+  "Recording & Video Distribution",
+  "Logic, video path and stream checks.",
+  [
+   "Check any Logic playback and audio routing",
+   "Verify Switcher-to-AirPlay-to-Apple TV-to-HDMI path where used",
+   "Run a short test of recording and stream output",
+   "Confirm destination, recording settings and available storage"
+  ],
+  "What should be checked before streaming publicly?",
+  "The video output and recording path",
+  [
+   "Only the seating layout",
+   "The video output and recording path",
+   "The restroom faucets"
+  ]
+ ],
+ [
+  "presentation",
+  "Presentation & Displays",
+  "Proclaim, LED wall and stage displays.",
+  [
+   "Open and review Proclaim service slides and graphics",
+   "Test rear computers, HDMI switcher and LED-wall source",
+   "Confirm stage/timer displays and lyrics are readable",
+   "Check that sermon, announcements, giving and altar graphics are ready"
+  ],
+  "Which application is listed for service presentation?",
+  "Proclaim",
+  [
+   "Switcher Studio",
+   "Proclaim",
+   "Logic only"
+  ]
+ ],
+ [
+  "facility",
+  "Facility & Room Setup",
+  "Lighting, thermostats, seating and building readiness.",
+  [
+   "Turn on entrance light banks: 3 switches, 3 switches, and 1 switch",
+   "Turn on stage lights; set three thermostats to 68°F for service as directed",
+   "Verify LED-wall breaker in café-closet panel is on (authorized personnel only)",
+   "Check chairs, doors, restrooms, room safety and needed supplies"
+  ],
+  "Where is the LED-wall breaker listed?",
+  "Café-closet panel",
+  [
+   "Café-closet panel",
+   "Sound booth microphone cage",
+   "Outside parking lot"
+  ]
+ ],
+ [
+  "closeout",
+  "Cleanup / Trash & Shutdown",
+  "Clean and safely secure the room after service.",
+  [
+   "Remove trash; check carpets, stage and common floors",
+   "Empty remaining liquids in sink and leave closets neat",
+   "Turn off fans and required lights; inspect toilets and faucets for leaks or running water",
+   "Shut down approved media equipment and LED wall; secure doors and report issues"
+  ],
+  "Which inspection is part of closing?",
+  "Toilets, faucets, fans and doors",
+  [
+   "Only microphones",
+   "Toilets, faucets, fans and doors",
+   "Only lyric slides"
+  ]
+ ],
+ [
+  "lead",
+  "Media / Technical Lead Final Walkthrough",
+  "Service-wide readiness, escalation and coverage.",
+  [
+   "Review completion of all assigned setup areas",
+   "Resolve missing/late positions or arrange coverage",
+   "Check sound, video, displays, power, room and graphics together",
+   "Record unresolved issues and give final ready-to-serve sign-off"
+  ],
+  "What is the lead responsible for?",
+  "Confirming cross-team readiness and resolving gaps",
+  [
+   "Only creating posters",
+   "Confirming cross-team readiness and resolving gaps",
+   "Only turning on the X32"
+  ]
+ ]
+];
+const MODULES = MODULES_RAW.map(([id, title, description, tasks, question, answer, choices]) =>
+  ({ id, title, description, tasks, question, answer, choices }));
+
+// Teach-mode tips extracted verbatim from the original index.html by build.py
+const TEACH_TIPS = {
+ "audio": [
+  "Walk the room before anyone else arrives — listen for hum or hiss that could indicate a patching issue.",
+  "Wireless mics: check battery percentage on the receiver, not just the transmitter light.",
+  "Clip a lav wire with two anchor points so movement doesn't create noise."
+ ],
+ "stage": [
+  "Send a known-good signal (tone or clap) to each monitor mix before the band arrives.",
+  "Ask the band for a \"worst case\" volume on stage — start there in monitor mix, not at zero.",
+  "Mark your gain levels with a photo so you can reset quickly after soundcheck."
+ ],
+ "video": [
+  "Use grid lines or a reference tape mark on the floor to repeat your camera framing each week.",
+  "Switcher Studio preview and program are your two eyes — confirm the feed before cutting.",
+  "Battery alert at 20%: swap or plug in now, not when it hits 5%."
+ ],
+ "distribution": [
+  "Record a 30-second test clip and play it back before service — confirm audio sync.",
+  "The AirPlay chain (iPad → Apple TV → HDMI) has a ~1-second lag — keep livestream audio in sync.",
+  "Have a backup storage device (USB or SD) in case the primary drive fills up mid-service."
+ ],
+ "presentation": [
+  "Review Proclaim slides in order while praying through the service flow — catch any stale info.",
+  "Stage display / timer should be tested from the platform, not just the booth.",
+  "Altar graphics should be in the cue before the message even starts — transition is smoother."
+ ],
+ "facility": [
+  "Feel the room temperature at the main seating area, not just near the thermostat.",
+  "Walk the safety path: entrance → main doors → stage left → stage right → back hallway.",
+  "Check for water under sinks in both restrooms — a small drip can become a big issue."
+ ],
+ "closeout": [
+  "Trash walk means every row of seating, the stage, the lobby, and the bathrooms.",
+  "Touch every faucet handle to confirm it is completely off before you lock up.",
+  "Shutdown order matters: audio last (after video and displays) to protect speakers."
+ ],
+ "lead": [
+  "Build a mental checklist per zone: sound booth, stage, video area, presentation, facility.",
+  "If a position is unfilled 15 minutes before service, escalate immediately — don't wait.",
+  "Sign-off is your name on the service. Walk every area yourself, every week."
+ ]
+};
+
+const MOD_ICONS = {
+  audio:'\u{1F39A}', stage:'\u{1F3B8}', video:'\u{1F4F9}', distribution:'\u{1F4E1}',
+  presentation:'\u{1F5A5}', facility:'\u{1F3DB}', closeout:'\u{1F9F9}', lead:'⭐'
+};
+
+// ---- State ----
+const S = {
+  guest: false,
+  user: null,        // Firebase Auth user
+  profile: null,     // users/{uid} data
+  assign: {},        // moduleId -> assignment doc data (own)
+  prog: {},          // moduleId -> progress doc data (own)
+  photos: {},        // guest-only in-memory photos: moduleId -> [dataUri]
+  view: 'dashboard',
+  cur: null,         // current module id in lesson view
+  pendingName: null  // name typed at sign-up, used when creating the users doc
+};
+let A = null, F = null, AUTH = null, DB = null;   // firebase-auth module, firestore module, auth, db
+
+// ---- Helpers ----
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const role = () => S.guest ? 'guest' : (S.profile ? S.profile.role : 'user');
+const isStaff = () => role() === 'lead' || role() === 'admin';
+const isAdmin = () => role() === 'admin';
+const uidNow = () => S.user ? S.user.uid : null;
+const modById = id => MODULES.find(m => m.id === id);
+const fmtTs = t => { try { const d = t && t.toDate ? t.toDate() : (t ? new Date(t) : null); return d ? d.toLocaleString() : ''; } catch (e) { return ''; } };
+const blankProg = () => ({ completed: [], quizPassed: false, quizAttempts: 0, submitted: false, approvedBy: null, approvedAt: null, notes: '' });
+const progOf = id => Object.assign(blankProg(), S.prog[id] || {});
+const isAssigned = id => S.guest || !!S.assign[id];
+function friendlyErr(e) {
+  const c = (e && e.code) || '';
+  const map = {
+    'auth/invalid-credential': 'Email or password is incorrect.',
+    'auth/wrong-password': 'Email or password is incorrect.',
+    'auth/user-not-found': 'Email or password is incorrect.',
+    'auth/invalid-email': 'That email address does not look right.',
+    'auth/email-already-in-use': 'An account with that email already exists. Try signing in.',
+    'auth/weak-password': 'Password is too weak (use 6 or more characters).',
+    'auth/too-many-requests': 'Too many attempts. Wait a few minutes and try again.',
+    'auth/network-request-failed': 'Network problem. Check your connection.',
+    'auth/requires-recent-login': 'Please sign in again and retry.',
+    'permission-denied': 'Not allowed. Your role or the Firestore rules do not permit this action.'
+  };
+  return map[c] || (e && e.message) || 'Something went wrong.';
+}
+
+// ---- Toast ----
+function toast(msg, type = 'ok', dur = 3600) {
+  const el = document.createElement('div');
+  el.className = 'toast toast-' + type;
+  el.textContent = msg;
+  $('toast-stack').appendChild(el);
+  setTimeout(() => el.style.transition = 'opacity .4s', dur);
+  setTimeout(() => el.remove(), dur + 500);
+}
+
+// ---- Modal (never alert/prompt/confirm) ----
+// actions: [{label, cls, cb}] ; cb(extraEl) may return false to keep the dialog open
+function showModal({ title, body = '', extra = '', actions = [] }) {
+  $('modal-title').textContent = title;
+  $('modal-body').textContent = body;
+  $('modal-body').classList.toggle('hidden', !body);
+  const mx = $('modal-extra');
+  mx.innerHTML = extra;
+  const ma = $('modal-actions');
+  ma.innerHTML = '';
+  actions.forEach(a => {
+    const b = document.createElement('button');
+    b.className = 'btn ' + (a.cls || 'btn-ghost');
+    b.textContent = a.label;
+    b.onclick = async () => {
+      b.disabled = true;
+      let r;
+      try { r = a.cb ? await a.cb(mx) : undefined; } catch (e) { toast(friendlyErr(e), 'err'); r = false; }
+      b.disabled = false;
+      if (r !== false) hideModal();
+    };
+    ma.appendChild(b);
+  });
+  $('modal-overlay').classList.remove('hidden');
+}
+function hideModal() { $('modal-overlay').classList.add('hidden'); }
+$('modal-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) hideModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') hideModal(); });
+
+// ---- Firebase loading (only when configured; Guest mode never needs it) ----
+async function initFirebase() {
+  const [appM, authM, fsM] = await Promise.all([
+    import(FIREBASE_BASE + 'firebase-app.js'),
+    import(FIREBASE_BASE + 'firebase-auth.js'),
+    import(FIREBASE_BASE + 'firebase-firestore.js')
+  ]);
+  const app = appM.initializeApp(firebaseConfig);
+  A = authM; F = fsM;
+  AUTH = A.getAuth(app);
+  DB = F.getFirestore(app);
+}
+
+// ---- Screens & router ----
+function showLoginPage(msg) {
+  $('app').classList.add('hidden');
+  $('login-page').classList.remove('hidden');
+  $('login-err').textContent = msg || '';
+  stopCameraIfAny();
+}
+function showApp() {
+  $('login-page').classList.add('hidden');
+  $('app').classList.remove('hidden');
+}
+function navigate(view, data = null) {
+  stopCameraIfAny();
+  S.view = view;
+  document.querySelectorAll('.nav-item[data-view]').forEach(el => el.classList.toggle('active', el.dataset.view === view));
+  document.querySelectorAll('.vsec').forEach(el => el.classList.toggle('active', el.id === 'view-' + view));
+  closeMobileMenu();
+  $('main').scrollTop = 0;
+  const fn = { dashboard: renderDashboard, courses: renderCourses, lesson: renderLesson, team: renderTeam, users: renderUsers, account: renderAccount }[view];
+  if (fn) fn(data);
+}
+function openMobileMenu() { $('sidebar').classList.add('open'); $('sidebar-overlay').classList.add('show'); }
+function closeMobileMenu() { $('sidebar').classList.remove('open'); $('sidebar-overlay').classList.remove('show'); }
+$('menu-toggle').addEventListener('click', openMobileMenu);
+$('sidebar-overlay').addEventListener('click', closeMobileMenu);
+document.querySelectorAll('.nav-item[data-view]').forEach(el => el.addEventListener('click', () => navigate(el.dataset.view)));
+
+function bootShell() {
+  const name = S.guest ? 'Guest' : (S.profile ? S.profile.name : 'User');
+  $('user-name').textContent = name;
+  $('user-av').textContent = name.trim().charAt(0) || '?';
+  $('user-role-label').textContent = role();
+  $('guest-label').textContent = S.guest ? 'Guest mode' : '';
+  $('logout-label').textContent = S.guest ? 'Leave Guest Mode' : 'Sign Out';
+  ['nav-team-section', 'nav-team'].forEach(id => $(id).classList.toggle('hidden', !isStaff()));
+  $('nav-users').classList.toggle('hidden', !isAdmin());
+  showApp();
+  navigate('dashboard');
+}
+
+// ==========================================================
+// Auth + data
+// ==========================================================
+async function ensureProfile(u) {
+  const ref = F.doc(DB, 'users', u.uid);
+  let snap = await F.getDoc(ref);
+  if (!snap.exists()) {
+    // Self-signup creates the users doc as role 'user' (rules enforce this).
+    const name = S.pendingName || u.displayName || (u.email || 'User').split('@')[0];
+    await F.setDoc(ref, { name, email: u.email, role: 'user', active: true, created: F.serverTimestamp() });
+    snap = await F.getDoc(ref);
+  }
+  S.pendingName = null;
+  return snap.data();
+}
+
+async function loadMyData() {
+  S.assign = {}; S.prog = {};
+  const uid = S.user.uid;
+  const [a, p] = await Promise.all([
+    F.getDocs(F.query(F.collection(DB, 'assignments'), F.where('uid', '==', uid))),
+    F.getDocs(F.query(F.collection(DB, 'progress'), F.where('uid', '==', uid)))
+  ]);
+  a.forEach(d => { S.assign[d.data().moduleId] = d.data(); });
+  p.forEach(d => { S.prog[d.data().moduleId] = d.data(); });
+}
+
+async function onSignedIn(u) {
+  S.user = u; S.guest = false;
+  try {
+    S.profile = await ensureProfile(u);
+    if (S.profile.active === false) {
+      await A.signOut(AUTH);
+      showLoginPage('This account has been deactivated. Please contact a lead or admin.');
+      return;
+    }
+    await loadMyData();
+    bootShell();
+  } catch (e) {
+    console.error(e);
+    showLoginPage('Could not load your account: ' + friendlyErr(e) + ' (Have the Firestore rules been published? See README.)');
+  }
+}
+
+async function startAuth() {
+  if (!FIREBASE_CONFIGURED) return;
+  try {
+    await initFirebase();
+  } catch (e) {
+    console.error(e);
+    $('login-err').textContent = 'Could not load Firebase from the CDN. Check your connection (Guest mode still works).';
+    return;
+  }
+  A.onAuthStateChanged(AUTH, async u => {
+    if (u) { await onSignedIn(u); }
+    else if (!S.guest) { S.user = null; S.profile = null; showLoginPage(); }
+  });
+}
+
+async function logout() {
+  if (S.guest) { S.guest = false; S.prog = {}; S.photos = {}; showLoginPage(); return; }
+  try { await A.signOut(AUTH); } catch (e) { toast(friendlyErr(e), 'err'); }
+  S.user = null; S.profile = null; S.assign = {}; S.prog = {};
+  showLoginPage();
+}
+$('logout-btn').addEventListener('click', logout);
+
+async function audit(action, target) {
+  if (!S.user || !isStaff()) return;
+  try { await F.addDoc(F.collection(DB, 'audits'), { actor: S.user.uid, action, target, created: F.serverTimestamp() }); }
+  catch (e) { console.warn('audit failed', e); }
+}
+
+// ---- login page wiring ----
+document.querySelectorAll('.login-tabs button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.login-tabs button').forEach(x => x.classList.toggle('active', x === b));
+  document.querySelectorAll('.login-pane').forEach(p => p.classList.toggle('active', p.id === b.dataset.pane));
+  $('login-err').textContent = '';
+}));
+
+function busy(btn, on, label) { btn.disabled = on; if (label) btn.textContent = on ? 'Please wait...' : label; }
+
+$('pane-signin').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = $('si-btn'); busy(btn, true, 'Sign in'); $('login-err').textContent = '';
+  try { await A.signInWithEmailAndPassword(AUTH, $('si-email').value.trim(), $('si-pass').value); }
+  catch (err) { $('login-err').textContent = friendlyErr(err); }
+  busy(btn, false, 'Sign in');
+});
+$('pane-signup').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = $('su-btn'); busy(btn, true, 'Create account'); $('login-err').textContent = '';
+  S.pendingName = $('su-name').value.trim();
+  try { await A.createUserWithEmailAndPassword(AUTH, $('su-email').value.trim(), $('su-pass').value); }
+  catch (err) { S.pendingName = null; $('login-err').textContent = friendlyErr(err); }
+  busy(btn, false, 'Create account');
+});
+$('pane-reset').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = $('rs-btn'); busy(btn, true, 'Send reset email'); $('login-err').textContent = '';
+  try {
+    await A.sendPasswordResetEmail(AUTH, $('rs-email').value.trim());
+    toast('If that email has an account, a reset link is on its way.', 'ok', 6000);
+  } catch (err) { $('login-err').textContent = friendlyErr(err); }
+  busy(btn, false, 'Send reset email');
+});
+$('guest-btn').addEventListener('click', () => {
+  S.guest = true; S.user = null; S.profile = null; S.assign = {}; S.prog = {}; S.photos = {};
+  bootShell();
+});
+
+// ==========================================================
+// Progress (Firestore for signed-in users, memory for Guest)
+// ==========================================================
+async function saveProg(mid, patch) {
+  const next = Object.assign(progOf(mid), patch);
+  if (S.guest) { S.prog[mid] = next; return next; }
+  const doc = {
+    uid: S.user.uid, moduleId: mid,
+    completed: next.completed, quizPassed: !!next.quizPassed, quizAttempts: next.quizAttempts | 0,
+    submitted: !!next.submitted, approvedBy: next.approvedBy ?? null, approvedAt: next.approvedAt ?? null,
+    notes: String(next.notes || '')
+  };
+  await F.setDoc(F.doc(DB, 'progress', S.user.uid + '_' + mid), doc);
+  S.prog[mid] = doc;
+  return doc;
+}
+
+function modStatus(m) {
+  const p = progOf(m.id), all = p.completed.length === m.tasks.length;
+  if (p.approvedAt) return { label: 'Approved', cls: 'badge-ok' };
+  if (p.submitted) return { label: 'In Review', cls: 'badge-warn' };
+  if (isAssigned(m.id) && p.quizPassed && all) return { label: 'Ready to Submit', cls: 'badge-gold' };
+  if (!isAssigned(m.id)) return { label: 'Not Assigned', cls: 'badge-mute' };
+  return { label: 'In Progress', cls: 'badge-mute' };
+}
+const safetyBlock = () => `<div class="safety-note"><strong>Safety notice</strong>${esc(SAFETY_TEXT)}</div>`;
+const safetyFoot = () => `<p class="safety-foot">${esc(SAFETY_TEXT)}</p>`;
+
+// ==========================================================
+// VIEW: Dashboard / Courses
+// ==========================================================
+function bindCards(root) {
+  root.querySelectorAll('.mod-card').forEach(el => el.addEventListener('click', () => navigate('lesson', el.dataset.id)));
+}
+function modCardHtml(m) {
+  const st = modStatus(m), p = progOf(m.id);
+  const pct = Math.round(p.completed.length / m.tasks.length * 100);
+  const locked = !isAssigned(m.id);
+  return `
+    <div class="mod-card${locked ? ' mod-card-locked' : ''}" data-id="${esc(m.id)}" tabindex="0">
+      <div class="mod-header">
+        <div class="mod-icon">${MOD_ICONS[m.id] || '\u{1F4CB}'}</div>
+        <div class="mod-title">${esc(m.title)}</div>
+        <span class="badge ${st.cls}" style="white-space:nowrap">${st.label}</span>
+      </div>
+      <div class="mod-desc">${esc(m.description)}</div>
+      <div class="prog-bar-wrap"><div class="prog-bar" style="width:${pct}%"></div></div>
+      <div class="mod-meta">
+        <span>${p.completed.length}/${m.tasks.length} tasks</span>
+        <span>${p.quizPassed ? '✓ Quiz passed' : (p.quizAttempts ? p.quizAttempts + ' attempts' : 'Quiz pending')}</span>
+      </div>
+    </div>`;
+}
+function renderDashboard() {
+  const ms = MODULES, pr = m => progOf(m.id);
+  const assigned = ms.filter(m => isAssigned(m.id)).length;
+  const tasksDone = ms.filter(m => pr(m).completed.length === m.tasks.length).length;
+  const quiz = ms.filter(m => pr(m).quizPassed).length;
+  const approved = ms.filter(m => pr(m).approvedAt).length;
+  const recent = ms.filter(m => isAssigned(m.id) && !pr(m).approvedAt).sort((a, b) => pr(b).completed.length - pr(a).completed.length).slice(0, 3);
+  const stat = (l, v) => `<div class="stat-card"><div class="stat-num">${v}</div><div class="stat-label">${l}</div></div>`;
+  const first = S.profile ? S.profile.name.split(' ')[0] : '';
+  $('view-dashboard').innerHTML = `
+    <div class="view">
+      <h1 class="view-title">Welcome${first ? ', ' + esc(first) : ''}</h1>
+      <p class="view-sub">${S.guest ? 'Exploring as Guest - progress is not saved' : 'Your training overview for Power Chapel The Oasis'}</p>
+      ${S.guest ? '<div class="guest-banner">\u{1F512} Guest mode: browse everything, nothing is saved. <a href="#" id="sign-in-link">Sign in</a> to save progress.</div>' : ''}
+      ${!S.guest && !assigned ? '<div class="view-only" style="margin-bottom:18px">No modules are assigned to you yet. Ask a lead or admin to assign them. You can still read every module under Training Modules.</div>' : ''}
+      <div class="stat-row">
+        ${stat('Modules Assigned', assigned)}${stat('Tasks Done', tasksDone)}${stat('Quizzes Passed', quiz)}${stat('Approved', approved)}
+      </div>
+      <h2 style="font-size:1rem;font-weight:700;margin-bottom:14px;color:var(--mute)">Continue Training</h2>
+      <div class="module-grid">
+        ${recent.length ? recent.map(modCardHtml).join('') : '<p style="color:var(--mute);font-size:.87rem">Nothing in progress. Great work!</p>'}
+      </div>
+      ${safetyFoot()}
+    </div>`;
+  bindCards($('view-dashboard'));
+  const l = $('sign-in-link'); if (l) l.addEventListener('click', e => { e.preventDefault(); logout(); });
+}
+function renderCourses() {
+  $('view-courses').innerHTML = `
+    <div class="view">
+      <h1 class="view-title">Training Modules</h1>
+      <p class="view-sub">${S.guest ? 'Guest preview - sign in to save progress' : MODULES.filter(m => isAssigned(m.id)).length + ' modules assigned'}</p>
+      ${S.guest ? '<div class="guest-banner">\u{1F512} Guest mode - nothing is saved.</div>' : ''}
+      <div class="module-grid">${MODULES.map(modCardHtml).join('')}</div>
+      ${safetyFoot()}
+    </div>`;
+  bindCards($('view-courses'));
+}
+
+// ==========================================================
+// Photo notes: stored LOCALLY only (IndexedDB). Never uploaded.
+// ==========================================================
+let _idb = null;
+function idbOpen() {
+  if (_idb) return Promise.resolve(_idb);
+  return new Promise((res, rej) => {
+    if (!window.indexedDB) return rej(new Error('IndexedDB unavailable'));
+    const rq = indexedDB.open('pcto-photo-notes', 1);
+    rq.onupgradeneeded = () => { rq.result.createObjectStore('photos', { keyPath: 'id', autoIncrement: true }).createIndex('k', 'k'); };
+    rq.onsuccess = () => { _idb = rq.result; res(_idb); };
+    rq.onerror = () => rej(rq.error);
+  });
+}
+const photoKey = mid => (S.user ? S.user.uid : 'guest') + '_' + mid;
+async function photosGet(mid) {
+  if (S.guest) return (S.photos[mid] || []).map((d, i) => ({ id: i, data: d }));
+  const db = await idbOpen();
+  return new Promise((res, rej) => {
+    const rq = db.transaction('photos').objectStore('photos').index('k').getAll(photoKey(mid));
+    rq.onsuccess = () => res(rq.result); rq.onerror = () => rej(rq.error);
+  });
+}
+async function photoAdd(mid, data) {
+  if (S.guest) { (S.photos[mid] = S.photos[mid] || []).push(data); return; }
+  const db = await idbOpen();
+  return new Promise((res, rej) => {
+    const rq = db.transaction('photos', 'readwrite').objectStore('photos').add({ k: photoKey(mid), data });
+    rq.onsuccess = () => res(); rq.onerror = () => rej(rq.error);
+  });
+}
+async function photoDel(mid, id) {
+  if (S.guest) { (S.photos[mid] || []).splice(id, 1); return; }
+  const db = await idbOpen();
+  return new Promise((res, rej) => {
+    const rq = db.transaction('photos', 'readwrite').objectStore('photos').delete(id);
+    rq.onsuccess = () => res(); rq.onerror = () => rej(rq.error);
+  });
+}
+async function refreshThumbs(mid) {
+  const wrap = $('photo-thumbs'); if (!wrap) return;
+  let list = [];
+  try { list = await photosGet(mid); } catch (e) { wrap.innerHTML = '<p class="mini-list">Local photo storage is unavailable in this browser.</p>'; return; }
+  wrap.innerHTML = list.map(p => `<div class="photo-thumb" data-id="${p.id}"><img alt="Photo note" src="${p.data}"><span class="photo-del" data-del="${p.id}" title="Delete">✕</span></div>`).join('');
+  wrap.querySelectorAll('.photo-del').forEach(el => el.addEventListener('click', async ev => {
+    ev.stopPropagation(); await photoDel(mid, Number(el.dataset.del)); refreshThumbs(mid);
+  }));
+  wrap.querySelectorAll('.photo-thumb').forEach(el => el.addEventListener('click', () => {
+    const p = list.find(x => String(x.id) === el.dataset.id);
+    if (p) showModal({ title: 'Photo note', extra: `<img class="photo-big" alt="Photo note" src="${p.data}">`, actions: [{ label: 'Close' }] });
+  }));
+}
+
+let _stream = null;
+function stopCameraIfAny() {
+  if (_stream) { _stream.getTracks().forEach(t => t.stop()); _stream = null; }
+}
+function setupCamera(mid) {
+  const video = $('cam-video'), canvas = $('cam-canvas'), ph = document.querySelector('.camera-placeholder');
+  const start = $('cam-start-btn'), snap = $('cam-snap-btn'), stop = $('cam-stop-btn'), file = $('cam-file');
+  const idle = () => { stopCameraIfAny(); video.classList.add('hidden'); snap.classList.add('hidden'); stop.classList.add('hidden'); start.classList.remove('hidden'); ph.classList.remove('hidden'); };
+  start.addEventListener('click', async () => {
+    try {
+      _stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+      video.srcObject = _stream; video.classList.remove('hidden');
+      start.classList.add('hidden'); snap.classList.remove('hidden'); stop.classList.remove('hidden'); ph.classList.add('hidden');
+    } catch (e) { toast('Camera access denied or unavailable. Try "Add Photo" instead.', 'err'); }
+  });
+  stop.addEventListener('click', idle);
+  snap.addEventListener('click', async () => {
+    if (!_stream || !video.videoWidth) return;
+    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    try { await photoAdd(mid, canvas.toDataURL('image/jpeg', 0.8)); toast('Photo saved on this device.', 'ok'); refreshThumbs(mid); }
+    catch (e) { toast('Could not save photo locally.', 'err'); }
+  });
+  file.addEventListener('change', () => {
+    const f = file.files && file.files[0]; if (!f) return;
+    const img = new Image(), url = URL.createObjectURL(f);
+    img.onload = async () => {
+      const sc = Math.min(1, 1280 / Math.max(img.width, img.height));
+      canvas.width = Math.round(img.width * sc); canvas.height = Math.round(img.height * sc);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      try { await photoAdd(mid, canvas.toDataURL('image/jpeg', 0.8)); toast('Photo saved on this device.', 'ok'); refreshThumbs(mid); }
+      catch (e) { toast('Could not save photo locally.', 'err'); }
+      file.value = '';
+    };
+    img.src = url;
+  });
+  refreshThumbs(mid);
+}
+
+// ==========================================================
+// VIEW: Lesson
+// ==========================================================
+function canSubmit(m) {
+  const p = progOf(m.id);
+  return !S.guest && isAssigned(m.id) && !p.submitted && !p.approvedAt && p.quizPassed && p.completed.length === m.tasks.length;
+}
+function renderLesson(id) {
+  const m = modById(id || S.cur);
+  if (!m) { navigate('courses'); return; }
+  S.cur = m.id;
+  const p = progOf(m.id), done = new Set(p.completed);
+  const assigned = isAssigned(m.id), locked = !!p.approvedAt || !assigned;
+  const tips = TEACH_TIPS[m.id] || ['Review each task carefully before marking it complete.'];
+  $('view-lesson').innerHTML = `
+    <div class="lesson-wrap">
+      <div class="lesson-main">
+        <div class="lesson-header">
+          <div class="lesson-back" id="back-btn" role="button" tabindex="0">← All Modules</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+            <div style="font-size:2rem">${MOD_ICONS[m.id] || '\u{1F4CB}'}</div>
+            <h1 class="lesson-title">${esc(m.title)}</h1>
+          </div>
+          <p class="lesson-desc">${esc(m.description)}</p>
+          ${p.approvedAt ? '<div class="badge badge-ok" style="margin-top:10px">✓ Approved</div>' : ''}
+        </div>
+        ${m.id === 'facility' ? safetyBlock() : ''}
+        ${!assigned ? '<div class="view-only">Not assigned to you - view only. Ask a lead or admin to assign this module to track progress.</div>' : ''}
+        ${S.guest ? '<div class="guest-banner">\u{1F512} Guest mode - checkmarks and quiz results disappear when you leave.</div>' : ''}
+
+        <div class="task-list">
+          <h3>Checklist (${done.size}/${m.tasks.length})</h3>
+          ${m.tasks.map((t, i) => `
+            <div class="task-item${locked ? ' ro' : ''}" data-idx="${i}" role="checkbox" aria-checked="${done.has(i)}" tabindex="0">
+              <div class="task-check${done.has(i) ? ' done' : ''}"></div>
+              <div class="task-text">${esc(t)}</div>
+            </div>`).join('')}
+        </div>
+
+        <div class="quiz-card">
+          <h3>Knowledge Check</h3>
+          <div class="quiz-question">${esc(m.question)}</div>
+          <div class="quiz-choices">
+            ${m.choices.map((c, i) => `<button class="quiz-choice" data-choice="${i}" ${p.quizPassed || locked ? 'disabled' : ''}>${esc(c)}</button>`).join('')}
+          </div>
+          <div id="quiz-result" style="margin-top:12px">${p.quizPassed ? '<div class="quiz-result pass">✓ Knowledge check passed</div>' : ''}</div>
+        </div>
+
+        <div class="notes-submit">
+          <h3>Notes &amp; Submission</h3>
+          <div class="field" style="margin-bottom:12px">
+            <label for="lesson-notes">Training notes (optional)</label>
+            <textarea id="lesson-notes" maxlength="2000" placeholder="Add any notes or observations..." ${locked || p.submitted ? 'disabled' : ''}>${esc(p.notes)}</textarea>
+          </div>
+          <button class="btn btn-gold" id="submit-btn" ${canSubmit(m) ? '' : 'disabled'}>
+            ${p.approvedAt ? '✓ Training Approved' : p.submitted ? 'Submitted - Awaiting Review' : 'Submit for Approval'}
+          </button>
+          ${p.submitted && !p.approvedAt ? '<p style="font-size:.8rem;color:var(--mute);margin-top:8px">Your lead will review this submission.</p>' : ''}
+        </div>
+      </div>
+
+      <div class="lesson-side">
+        <div class="teach-panel">
+          <h3>\u{1F4A1} Teach Mode</h3>
+          ${tips.map(t => `<div class="teach-tip">${esc(t)}</div>`).join('')}
+        </div>
+        <div class="camera-panel">
+          <h3>\u{1F4F7} Photo Notes</h3>
+          <div class="camera-preview">
+            <span class="camera-placeholder">\u{1F4F7}</span>
+            <video id="cam-video" autoplay playsinline muted class="hidden"></video>
+            <canvas id="cam-canvas" class="hidden"></canvas>
+          </div>
+          <div class="camera-btn-row" style="flex-wrap:wrap">
+            <button class="btn btn-ghost btn-sm" id="cam-start-btn">Start Camera</button>
+            <button class="btn btn-gold btn-sm hidden" id="cam-snap-btn">Snap</button>
+            <button class="btn btn-ghost btn-sm hidden" id="cam-stop-btn">Stop</button>
+            <label class="btn btn-ghost btn-sm" for="cam-file" style="cursor:pointer">Add Photo</label>
+            <input id="cam-file" class="sr" type="file" accept="image/*" capture="environment">
+          </div>
+          <div class="photo-thumbs" id="photo-thumbs"></div>
+          <p style="font-size:.72rem;color:var(--mute);margin-top:8px">Photos are stored only in this browser on this device (never uploaded, never synced, not visible to leads). Clearing browser data deletes them.</p>
+        </div>
+      </div>
+    </div>`;
+
+  $('back-btn').addEventListener('click', () => navigate('courses'));
+  if (!locked) {
+    document.querySelectorAll('#view-lesson .task-item').forEach(el => el.addEventListener('click', () => toggleTask(m, Number(el.dataset.idx))));
+    if (!p.quizPassed) document.querySelectorAll('#view-lesson .quiz-choice').forEach(b => b.addEventListener('click', () => answerQuiz(m, Number(b.dataset.choice))));
+  }
+  if (canSubmit(m)) $('submit-btn').addEventListener('click', () => submitModule(m));
+  setupCamera(m.id);
+}
+
+async function toggleTask(m, idx) {
+  const p = progOf(m.id);
+  if (p.submitted) { toast('Submitted modules are locked. Ask your lead to request changes.', 'warn'); return; }
+  const set = new Set(p.completed);
+  set.has(idx) ? set.delete(idx) : set.add(idx);
+  const notes = $('lesson-notes') ? $('lesson-notes').value : p.notes;
+  try { await saveProg(m.id, { completed: Array.from(set).sort((a, b) => a - b), notes }); renderLesson(m.id); }
+  catch (e) { toast(friendlyErr(e), 'err'); }
+}
+
+async function answerQuiz(m, idx) {
+  const right = m.choices[idx] === m.answer;
+  const p = progOf(m.id);
+  document.querySelectorAll('#view-lesson .quiz-choice').forEach(b => b.disabled = true);
+  const chosen = document.querySelector(`#view-lesson .quiz-choice[data-choice="${idx}"]`);
+  try {
+    const notes = $('lesson-notes') ? $('lesson-notes').value : p.notes;
+    await saveProg(m.id, { quizAttempts: (p.quizAttempts || 0) + 1, quizPassed: right || p.quizPassed, notes });
+  } catch (e) { toast(friendlyErr(e), 'err'); renderLesson(m.id); return; }
+  if (right) {
+    chosen.classList.add('correct');
+    $('quiz-result').innerHTML = '<div class="quiz-result pass">✓ Correct - well done!</div>';
+    $('submit-btn').disabled = !canSubmit(m);
+    if (canSubmit(m)) $('submit-btn').addEventListener('click', () => submitModule(m));
+    toast('Knowledge check passed!', 'ok');
+  } else {
+    chosen.classList.add('wrong');
+    $('quiz-result').innerHTML = '<div class="quiz-result fail">✗ Incorrect - review the material and try again.</div>';
+    toast('Not quite - try again.', 'warn');
+    setTimeout(() => {
+      document.querySelectorAll('#view-lesson .quiz-choice').forEach(b => { b.disabled = false; b.classList.remove('wrong'); });
+      const r = $('quiz-result'); if (r) r.innerHTML = '';
+    }, 1800);
+  }
+}
+
+function submitModule(m) {
+  if (S.guest) { toast('Sign in to submit training for review.', 'warn'); return; }
+  if (!canSubmit(m)) return;
+  const notes = $('lesson-notes') ? $('lesson-notes').value : '';
+  showModal({
+    title: 'Submit for Approval',
+    body: `Submit "${m.title}" to your lead for review? Make sure all tasks are complete.`,
+    actions: [
+      { label: 'Cancel' },
+      { label: 'Submit', cls: 'btn-gold', cb: async () => {
+        await saveProg(m.id, { submitted: true, notes });
+        toast('Submitted for review!', 'ok');
+        renderLesson(m.id);
+      } }
+    ]
+  });
+}
+
+// ==========================================================
+// VIEW: Team overview (lead + admin)
+// ==========================================================
+let TEAM = { users: [], assign: {}, prog: {} };   // assign/prog keyed by uid_moduleId
+
+async function loadTeam() {
+  const [u, a, p] = await Promise.all([
+    F.getDocs(F.collection(DB, 'users')),
+    F.getDocs(F.collection(DB, 'assignments')),
+    F.getDocs(F.collection(DB, 'progress'))
+  ]);
+  TEAM = { users: [], assign: {}, prog: {} };
+  u.forEach(d => TEAM.users.push(Object.assign({ uid: d.id }, d.data())));
+  a.forEach(d => { TEAM.assign[d.id] = d.data(); });
+  p.forEach(d => { TEAM.prog[d.id] = d.data(); });
+  TEAM.users.sort((x, y) => (x.name || '').localeCompare(y.name || ''));
+}
+const tProg = (uid, mid) => Object.assign(blankProg(), TEAM.prog[uid + '_' + mid] || {});
+
+async function renderTeam() {
+  const root = $('view-team');
+  if (!isStaff()) { root.innerHTML = '<div class="view"><p class="view-sub">Leads and admins only.</p></div>'; return; }
+  root.innerHTML = '<div class="view"><h1 class="view-title">Team Overview</h1><p class="view-sub">Loading...</p></div>';
+  try { await loadTeam(); } catch (e) { root.innerHTML = `<div class="view"><h1 class="view-title">Team Overview</h1><p class="view-sub">${esc(friendlyErr(e))}</p></div>`; return; }
+  const pending = [];
+  TEAM.users.forEach(u => MODULES.forEach(m => { const p = tProg(u.uid, m.id); if (p.submitted && !p.approvedAt) pending.push({ u, m }); }));
+  const dot = (u, m) => {
+    const p = tProg(u.uid, m.id), asg = !!TEAM.assign[u.uid + '_' + m.id];
+    const cls = p.approvedAt ? 'appr' : p.submitted ? 'sub' : (p.completed.length === m.tasks.length ? 'done' : '');
+    return `<span class="prog-dot cell-btn ${cls}" style="${asg ? '' : 'opacity:.35'}" title="${esc(m.title)}${asg ? '' : ' (not assigned)'}" data-uid="${esc(u.uid)}" data-mid="${esc(m.id)}"></span>`;
+  };
+  root.innerHTML = `
+    <div class="view">
+      <h1 class="view-title">Team Overview</h1>
+      <p class="view-sub">Gold = Approved &middot; Orange = In Review &middot; Green = Tasks done &middot; Faded = not assigned. Click a dot to review.</p>
+      <div class="card-panel" style="margin-bottom:20px">
+        <h2 style="font-size:.95rem;margin-bottom:10px">Awaiting review (${pending.length})</h2>
+        ${pending.length ? `<div class="flex wrap gap">${pending.map(x => `<button class="btn btn-ghost btn-sm" data-uid="${esc(x.u.uid)}" data-mid="${esc(x.m.id)}">${esc(x.u.name)} - ${esc(x.m.title)}</button>`).join('')}</div>` : '<p class="mini-list">No submissions waiting.</p>'}
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Name</th><th>Role</th><th>Modules</th><th></th></tr></thead>
+        <tbody>${TEAM.users.map(u => `
+          <tr>
+            <td>${esc(u.name)}${u.active === false ? ' <span class="badge badge-mute">inactive</span>' : ''}<div class="mini-list">${esc(u.email)}</div></td>
+            <td>${esc(u.role)}</td>
+            <td><div class="prog-dots">${MODULES.map(m => dot(u, m)).join('')}</div></td>
+            <td><button class="btn btn-ghost btn-xs" data-assign="${esc(u.uid)}">Assign</button></td>
+          </tr>`).join('')}
+        </tbody></table></div>
+    </div>`;
+  root.querySelectorAll('[data-mid]').forEach(el => el.addEventListener('click', () => openReview(el.dataset.uid, el.dataset.mid)));
+  root.querySelectorAll('[data-assign]').forEach(el => el.addEventListener('click', () => openAssign(el.dataset.assign, renderTeam)));
+}
+
+function openReview(uid, mid) {
+  const u = TEAM.users.find(x => x.uid === uid), m = modById(mid), p = tProg(uid, mid);
+  if (!u || !m) return;
+  const self = uid === S.user.uid;
+  const status = p.approvedAt ? 'Approved ' + fmtTs(p.approvedAt) : p.submitted ? 'Submitted - awaiting review' : 'Not submitted';
+  const extra = `
+    <div class="mini-list">
+      <div><b>Member:</b> ${esc(u.name)}</div>
+      <div><b>Module:</b> ${esc(m.title)}</div>
+      <div><b>Status:</b> ${esc(status)}</div>
+      <div><b>Tasks:</b> ${p.completed.length}/${m.tasks.length}</div>
+      <div><b>Quiz:</b> ${p.quizPassed ? 'passed' : 'not passed'} (${p.quizAttempts} attempts)</div>
+      <div><b>Notes:</b> ${esc(p.notes) || '<i>none</i>'}</div>
+      ${self ? '<div style="color:var(--warn)">You cannot approve your own submission. Ask another lead or admin.</div>' : ''}
+    </div>`;
+  const setApproval = async (patch, action) => {
+    await F.updateDoc(F.doc(DB, 'progress', uid + '_' + mid), patch);
+    await audit(action, uid + '_' + mid);
+    toast('Saved.', 'ok');
+    renderTeam();
+  };
+  const actions = [{ label: 'Close' }];
+  if (!self && p.submitted && !p.approvedAt) {
+    actions.push({ label: 'Request changes', cls: 'btn-danger', cb: () => setApproval({ submitted: false, approvedBy: null, approvedAt: null }, 'request-changes') });
+    actions.push({ label: 'Approve', cls: 'btn-gold', cb: () => setApproval({ approvedBy: S.user.uid, approvedAt: F.serverTimestamp() }, 'approve') });
+  } else if (!self && p.approvedAt) {
+    actions.push({ label: 'Revoke approval', cls: 'btn-danger', cb: () => setApproval({ submitted: false, approvedBy: null, approvedAt: null }, 'revoke-approval') });
+  }
+  showModal({ title: 'Review submission', extra, actions });
+}
+
+function openAssign(uid, after) {
+  const u = TEAM.users.find(x => x.uid === uid); if (!u) return;
+  const extra = MODULES.map(m => `<label class="ck"><input type="checkbox" value="${esc(m.id)}" ${TEAM.assign[uid + '_' + m.id] ? 'checked' : ''}> ${esc(m.title)}</label>`).join('');
+  showModal({
+    title: 'Assign modules: ' + u.name, extra,
+    actions: [{ label: 'Cancel' }, { label: 'Save', cls: 'btn-gold', cb: async mx => {
+      const want = new Set(Array.from(mx.querySelectorAll('input:checked')).map(i => i.value));
+      for (const m of MODULES) {
+        const id = uid + '_' + m.id, has = !!TEAM.assign[id];
+        if (want.has(m.id) && !has) {
+          await F.setDoc(F.doc(DB, 'assignments', id), { uid, moduleId: m.id, assignedBy: S.user.uid, assignedAt: F.serverTimestamp() });
+          await audit('assign', id);
+        } else if (!want.has(m.id) && has) {
+          await F.deleteDoc(F.doc(DB, 'assignments', id));
+          await audit('unassign', id);
+        }
+      }
+      toast('Assignments saved.', 'ok');
+      if (uid === S.user.uid) await loadMyData();
+      if (after) after();
+    } }]
+  });
+}
+
+// ==========================================================
+// VIEW: Manage users (admin) - self-signup + role management
+// ==========================================================
+async function renderUsers() {
+  const root = $('view-users');
+  if (!isAdmin()) { root.innerHTML = '<div class="view"><p class="view-sub">Admins only.</p></div>'; return; }
+  root.innerHTML = '<div class="view"><h1 class="view-title">Manage Users</h1><p class="view-sub">Loading...</p></div>';
+  let audits = [];
+  try {
+    await loadTeam();
+    const q = await F.getDocs(F.query(F.collection(DB, 'audits'), F.orderBy('created', 'desc'), F.limit(25)));
+    q.forEach(d => audits.push(d.data()));
+  } catch (e) { root.innerHTML = `<div class="view"><h1 class="view-title">Manage Users</h1><p class="view-sub">${esc(friendlyErr(e))}</p></div>`; return; }
+  const nameOf = uid => (TEAM.users.find(u => u.uid === uid) || {}).name || uid;
+  root.innerHTML = `
+    <div class="view">
+      <h1 class="view-title">Manage Users</h1>
+      <p class="view-sub">${TEAM.users.length} accounts. People create their own account on the sign-in page; use this screen to set roles, deactivate, assign modules and send password-reset emails.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Name</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>${TEAM.users.map(u => `
+          <tr>
+            <td>${esc(u.name)}<div class="mini-list">${esc(u.email)}</div></td>
+            <td>${esc(u.role)}</td>
+            <td>${u.active === false ? '<span class="badge badge-mute">inactive</span>' : '<span class="badge badge-ok">active</span>'}</td>
+            <td><div class="flex wrap" style="gap:6px">
+              ${u.uid === S.user.uid ? '<span class="mini-list">(you)</span>' : `<button class="btn btn-ghost btn-xs" data-edit="${esc(u.uid)}">Role / Active</button>`}
+              <button class="btn btn-ghost btn-xs" data-asg="${esc(u.uid)}">Assign</button>
+              <button class="btn btn-ghost btn-xs" data-rst="${esc(u.uid)}">Reset email</button>
+            </div></td>
+          </tr>`).join('')}</tbody></table></div>
+      <h2 style="font-size:.95rem;margin:24px 0 8px">Recent audit log</h2>
+      <div class="card-panel mini-list">${audits.length ? audits.map(a => `<div>${esc(fmtTs(a.created))} - ${esc(nameOf(a.actor))}: ${esc(a.action)} ${esc(a.target)}</div>`).join('') : 'No entries yet.'}</div>
+    </div>`;
+  root.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openEditUser(b.dataset.edit)));
+  root.querySelectorAll('[data-asg]').forEach(b => b.addEventListener('click', () => openAssign(b.dataset.asg, renderUsers)));
+  root.querySelectorAll('[data-rst]').forEach(b => b.addEventListener('click', () => openResetEmail(b.dataset.rst)));
+}
+function openEditUser(uid) {
+  const u = TEAM.users.find(x => x.uid === uid); if (!u) return;
+  const extra = `
+    <div class="field"><label for="eu-role">Role</label>
+      <select id="eu-role">${['user', 'lead', 'admin'].map(r => `<option value="${r}" ${u.role === r ? 'selected' : ''}>${r}</option>`).join('')}</select></div>
+    <label class="ck"><input type="checkbox" id="eu-active" ${u.active === false ? '' : 'checked'}> Account active</label>`;
+  showModal({ title: 'Edit ' + u.name, extra, actions: [{ label: 'Cancel' }, { label: 'Save', cls: 'btn-gold', cb: async () => {
+    const r = $('eu-role').value, a = $('eu-active').checked;
+    await F.updateDoc(F.doc(DB, 'users', uid), { role: r, active: a });
+    if (r !== u.role) await audit('role:' + u.role + '->' + r, uid);
+    if (a !== (u.active !== false)) await audit(a ? 'activate' : 'deactivate', uid);
+    toast('User updated.', 'ok'); renderUsers();
+  } }] });
+}
+function openResetEmail(uid) {
+  const u = TEAM.users.find(x => x.uid === uid); if (!u) return;
+  showModal({ title: 'Send password-reset email?', body: `A reset link will be emailed to ${u.email}.`, actions: [{ label: 'Cancel' }, { label: 'Send', cls: 'btn-gold', cb: async () => {
+    await A.sendPasswordResetEmail(AUTH, u.email);
+    await audit('send-password-reset', uid);
+    toast('Reset email sent.', 'ok');
+  } }] });
+}
+
+// ==========================================================
+// VIEW: Account
+// ==========================================================
+function renderAccount() {
+  const root = $('view-account');
+  if (S.guest) {
+    root.innerHTML = `<div class="view" style="max-width:520px"><h1 class="view-title">Account</h1><p class="view-sub">Guest - not signed in</p>
+      <div class="card-panel"><p style="font-size:.9rem;color:var(--mute)">Guests can browse every module. Nothing is saved. Sign in or create an account to track progress and submit for approval.</p>
+      <button class="btn btn-gold" id="acct-signin" style="margin-top:14px">Go to sign in</button></div>${safetyFoot()}</div>`;
+    $('acct-signin').addEventListener('click', logout);
+    return;
+  }
+  const p = S.profile;
+  root.innerHTML = `
+    <div class="view" style="max-width:520px">
+      <h1 class="view-title">Account</h1>
+      <p class="view-sub">${esc(p.email)} &middot; role: ${esc(p.role)}</p>
+      <div class="card-panel flex col gap2">
+        <div class="field"><label for="ac-name">Display name</label><input id="ac-name" value="${esc(p.name)}" maxlength="80"></div>
+        <button class="btn btn-ghost" id="ac-save">Save name</button>
+      </div>
+      <div class="card-panel flex col gap2" style="margin-top:18px">
+        <h2 style="font-size:.95rem">Change password</h2>
+        <div class="field"><label for="ac-cur">Current password</label><input id="ac-cur" type="password" autocomplete="current-password"></div>
+        <div class="field"><label for="ac-new">New password (6+ characters)</label><input id="ac-new" type="password" autocomplete="new-password"></div>
+        <div class="field"><label for="ac-new2">Repeat new password</label><input id="ac-new2" type="password" autocomplete="new-password"></div>
+        <button class="btn btn-gold" id="ac-pw">Change password</button>
+        <button class="link-btn" id="ac-reset" style="align-self:flex-start">Email me a reset link instead</button>
+      </div>
+      ${safetyFoot()}
+    </div>`;
+  $('ac-save').addEventListener('click', async () => {
+    const name = $('ac-name').value.trim(); if (!name) { toast('Name cannot be empty.', 'warn'); return; }
+    try { await F.updateDoc(F.doc(DB, 'users', S.user.uid), { name }); S.profile.name = name; $('user-name').textContent = name; toast('Name saved.', 'ok'); }
+    catch (e) { toast(friendlyErr(e), 'err'); }
+  });
+  $('ac-pw').addEventListener('click', async () => {
+    const cur = $('ac-cur').value, n1 = $('ac-new').value, n2 = $('ac-new2').value;
+    if (!cur || n1.length < 6) { toast('Enter your current password and a new one (6+ characters).', 'warn'); return; }
+    if (n1 !== n2) { toast('New passwords do not match.', 'warn'); return; }
+    try {
+      await A.reauthenticateWithCredential(S.user, A.EmailAuthProvider.credential(S.user.email, cur));
+      await A.updatePassword(S.user, n1);
+      ['ac-cur', 'ac-new', 'ac-new2'].forEach(i => $(i).value = '');
+      toast('Password changed.', 'ok');
+    } catch (e) { toast(friendlyErr(e), 'err'); }
+  });
+  $('ac-reset').addEventListener('click', async () => {
+    try { await A.sendPasswordResetEmail(AUTH, S.user.email); toast('Reset email sent.', 'ok'); }
+    catch (e) { toast(friendlyErr(e), 'err'); }
+  });
+}
+
+// ==========================================================
+// Boot
+// ==========================================================
+$('login-safety').textContent = SAFETY_TEXT;
+if (!FIREBASE_CONFIGURED) {
+  $('setup-needed').classList.remove('hidden');
+  $('auth-forms').classList.add('hidden');
+}
+startAuth();
+
+</script>
+</body>
+</html>
