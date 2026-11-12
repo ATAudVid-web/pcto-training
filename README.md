@@ -4,7 +4,8 @@ Volunteer training portal for Power Chapel The Oasis, Louisville GA. A single `i
 
 ## Safety notice
 
-Module content is provisional and not independently verified against the final approved checklist. Electrical/breaker instructions (Facility module) are safety-sensitive, only authorized personnel should perform them, and need local policy review before production use.
+Module content is provisional and not ind
+ependently verified against the final approved checklist. Electrical/breaker instructions (Facility module) are safety-sensitive, only authorized personnel should perform them, and need local policy review before production use.
 
 ## Roles
 
